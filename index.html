@@ -339,6 +339,7 @@ function toggleFav(c){const id=fid(c),i=favs.indexOf(id);if(i>-1)favs.splice(i,1
 let dead=LS.get("tv-dead");if(!dead||typeof dead!=="object"||Array.isArray(dead))dead={};
 const isDead=c=>{const t=dead[fid(c)];return !!t&&Date.now()-t<864e5};
 function markDead(c,v){if(v)dead[fid(c)]=Date.now();else delete dead[fid(c)];LS.set("tv-dead",dead)}
+let good=LS.get("tv-good");if(!good||typeof good!=="object"||Array.isArray(good))good={}; // ultima sorgente che ha funzionato, per canale
 let skT=0,zapDir=0,zapN=0;
 function favList(){const out=[];favs.forEach(id=>{const k=id.indexOf(":"),l=cache[id.slice(0,k)];if(!l)return;const c=l.find(x=>x.key===id.slice(k+1));if(c)out.push(c)});return out}
 function setNum(n,c,i){n.textContent="";if(isFav(c)){const s=document.createElement("i");s.className="star";s.textContent="★ ";n.appendChild(s)}n.appendChild(document.createTextNode(i+1))}
@@ -548,27 +549,34 @@ function go(my){
  if(p&&p.catch)p.catch(()=>{if(my!==tok)return;video.muted=true;video.play().catch(()=>{})});
 }
 function start(c,idx,prev){
- stop();const my=tok,src=c.sources[idx];pm=!!prev;video.muted=false;
- video.onplaying=()=>{if(my!==tok)return;
+ stop();
+ if(idx===0){const gu=good[fid(c)],gk=gu?c.sources.findIndex(s=>s.url===gu):-1;if(gk>0)c.sources.unshift(c.sources.splice(gk,1)[0])} // parti da quella che ha funzionato l'ultima volta
+ const my=tok,src=c.sources[idx];pm=!!prev;video.muted=false;let wd=0,started=false;
+ video.onplaying=()=>{if(my!==tok)return;clearTimeout(wd);started=true;if(good[fid(c)]!==src.url){good[fid(c)]=src.url;LS.set("tv-good",good)}
   if(pm){pvOk=true;video.classList.remove("off");$("#slotmsg").textContent="";return}
   loading=false;if(dead[fid(c)])markDead(c,false);setState(video.muted?(MOB?"Tocca lo schermo per attivare l’audio":"Premi OK per attivare l’audio"):(src.q?src.q+"p":""));showOvl()};
  const fail=()=>{
-  if(my!==tok)return;
+  if(my!==tok)return;clearTimeout(wd);
   if(idx+1<c.sources.length){start(c,idx+1,pm);return}
   if(pm){video.classList.add("off");$("#slotmsg").textContent="Anteprima non disponibile";return}
   loading=false;setState("");$("#err").hidden=false;showOvl();
   if(navigator.onLine!==false)markDead(c,true);
   if(zapDir&&zapN<10)skT=setTimeout(()=>{if(my===tok)step(zapDir,true)},1200);
  };
+ // se non parte entro qualche secondo passa alla sorgente successiva (senza aspettare i timeout di hls.js)
+ const arm=()=>{wd=setTimeout(()=>{if(my===tok&&video.readyState<3)fail()},idx+1<c.sources.length?9000:25000)};
  if(remoteActive()){
   if(hls){try{hls.destroy()}catch(e){}hls=null}
   video.onerror=fail;video.src=src.url;video.load();go(my);
  }else if(window.Hls&&Hls.isSupported()){
   hls=new Hls({capLevelToPlayerSize:true,maxBufferLength:12});
-  hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal)fail()});
+  let rec=0;
+  hls.on(Hls.Events.ERROR,(_,d)=>{if(!d.fatal||my!==tok)return;
+   if(started&&rec++<3){if(d.type===Hls.ErrorTypes.NETWORK_ERROR){hls.startLoad();return}if(d.type===Hls.ErrorTypes.MEDIA_ERROR){hls.recoverMediaError();return}}
+   fail()});
   hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(my===tok&&video.paused)go(my)});
-  hls.loadSource(src.url);hls.attachMedia(video);go(my);
- }else{video.src=src.url;video.onerror=fail;go(my)}
+  hls.loadSource(src.url);hls.attachMedia(video);go(my);arm();
+ }else{video.src=src.url;video.onerror=fail;go(my);arm()}
 }
 function play(i,idx){
  zReset();
