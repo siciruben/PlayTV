@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#070a13">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -217,7 +217,19 @@ html,body{background:#05070d}
 .mob #ml{max-width:30rem;padding-left:calc(1rem + env(safe-area-inset-left));padding-top:calc(.8rem + env(safe-area-inset-top))}
 #nm{padding-top:calc(4vh + env(safe-area-inset-top))}
 }
-@media (orientation:landscape) and (max-height:420px){.mob #tb button{width:2.3rem;height:2.3rem;margin:.12rem 0}}
+#player.full,#app.w{touch-action:none}
+.mob #tb{background:none;pointer-events:none;justify-content:center;padding:0 .8rem calc(.7rem + env(safe-area-inset-bottom))}
+.mob #tb.hide{pointer-events:none}
+.mob #tb #tbp{pointer-events:auto;display:flex;justify-content:space-around;align-items:center;width:100%;max-width:26rem;padding:.35rem .4rem;border-radius:1.5rem;background:rgba(14,20,38,.9);border:.08rem solid rgba(255,255,255,.1);box-shadow:0 .4rem 1.4rem rgba(0,0,0,.55)}
+.mob #tb.hide #tbp{pointer-events:none}
+.mob #tb button{background:transparent}
+.mob #tb button.on,.mob #tb button:active{background:#3d79f2}
+@media (orientation:landscape){
+.mob #tb{padding:0 calc(.8rem + env(safe-area-inset-right)) 0 1.6rem;background:none;justify-content:center;align-items:center}
+.mob #tb #tbp{flex-direction:column;width:auto;max-width:none;padding:.4rem;border-radius:1.6rem}
+.mob #tb button{width:2.9rem;height:2.9rem;margin:.1rem 0}
+}
+@media (orientation:landscape) and (max-height:380px){.mob #tb button{width:2.5rem;height:2.5rem;margin:.06rem 0}}
 </style>
 </head>
 <body>
@@ -232,7 +244,7 @@ html,body{background:#05070d}
   <div id="ovl"><div class="n" id="on"></div><div class="t" id="ot"></div><div class="s" id="state"></div><div id="oe"></div><div id="clk"></div></div>
   <div id="subs"></div>
   <div id="hint"></div>
-  <div id="tb"><button class="f" id="tbB">←</button><button class="f" id="tbI" aria-label="Info programma"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".7" fill="currentColor"/></svg></button><button class="f" id="tbF">★</button><button class="f" id="tbS">CC</button><button class="f" id="tbL">☰</button><button class="f" id="tbN">123</button><button class="f" id="tbZ" aria-label="Riempi lo schermo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div>
+  <div id="tb"><div id="tbp"><button class="f" id="tbB">←</button><button class="f" id="tbI" aria-label="Info programma"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.6" r=".7" fill="currentColor"/></svg></button><button class="f" id="tbF">★</button><button class="f" id="tbS">CC</button><button class="f" id="tbL">☰</button><button class="f" id="tbN">123</button><button class="f" id="tbZ" aria-label="Riempi lo schermo"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
   <div id="err" hidden>Questo canale non è disponibile al momento.<small>Usa ▲ ▼ per cambiare canale</small></div>
   <div id="ml" hidden></div>
  </section>
@@ -540,6 +552,7 @@ function start(c,idx,prev){
  }else{video.src=src.url;video.onerror=fail;go(my)}
 }
 function play(i,idx){
+ zReset();
  pos=i;loading=true;resetSubs();clearTimeout(skT);
  $("#on").textContent=lab(i);$("#ot").textContent=zl[i].name;epgShow(zl[i]);infoRefresh();
  setState("Caricamento…");$("#err").hidden=true;updClock();showOvl();start(zl[i],idx||0,false);
@@ -624,6 +637,7 @@ function toggleSubs(){
  flash(n?"Sottotitoli attivati":"Sottotitoli attivati · questo canale per ora non ne trasmette");
 }
 function enter(i){
+ zReset();
  zapDir=0;zl=view;zcc=cur;zcat=catSel;watching=true;clearTimeout(pvT);M=null;ML.hidden=true;$("#ovl").classList.remove("shift");$("#hint").classList.remove("shift");setHint();
  $("#app").classList.add("w");video.style.cssText="";video.className="full"+(fillOn?" fill":"");
  if(MOB){try{history.pushState({w:1},"")}catch(x){}wlOn()}
@@ -634,6 +648,7 @@ function enter(i){
  }else play(i,0);
 }
 function leave(){
+ zReset();
  nmClose();infoClose();
  if(history.state&&history.state.w){bk=true;try{history.back()}catch(x){bk=false}}wlOff();
  stop();clearTimeout(skT);M=null;ML.hidden=true;$("#ovl").classList.remove("shift");$("#hint").classList.remove("shift");
@@ -905,6 +920,28 @@ document.addEventListener("touchend",e=>{
   else{$("#ovl").classList.add("hide");$("#hint").classList.add("hide");$("#tb").classList.add("hide")}
  }
 },{passive:false});
+/* zoom con due dita: ingrandisce SOLO il video (testi e orario restano fermi); con zoom attivo un dito sposta l'immagine */
+let zs=1,zx=0,zy=0,pd=1,ps=1,pmx=0,pmy=0,lx=0,ly=0;
+function zApply(){video.style.transform=zs>1?"translate("+zx+"px,"+zy+"px) scale("+zs+")":""}
+function zReset(){zs=1;zx=zy=0;video.style.transform=""}
+function zClamp(){const mx=(zs-1)*innerWidth/2,my=(zs-1)*innerHeight/2;zx=Math.max(-mx,Math.min(mx,zx));zy=Math.max(-my,Math.min(my,zy))}
+const zOk=e=>watching&&!M&&!e.target.closest("#tb,#nm,#inf");
+const pinch=e=>{const a=e.touches[0],b=e.touches[1];return{d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY)||1,x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2}};
+document.addEventListener("touchstart",e=>{
+ if(!zOk(e))return;
+ if(e.touches.length===2){const p=pinch(e);pd=p.d;ps=zs;pmx=p.x;pmy=p.y;tt=0}
+ else if(e.touches.length===1){lx=e.touches[0].clientX;ly=e.touches[0].clientY}
+},{passive:true});
+document.addEventListener("touchmove",e=>{
+ if(!zOk(e))return;
+ if(e.touches.length===2){const p=pinch(e);zs=Math.max(1,Math.min(5,ps*p.d/pd));zx+=p.x-pmx;zy+=p.y-pmy;pmx=p.x;pmy=p.y;tt=0;zClamp();zApply();e.preventDefault()}
+ else if(e.touches.length===1&&zs>1){const t=e.touches[0];zx+=t.clientX-lx;zy+=t.clientY-ly;lx=t.clientX;ly=t.clientY;tt=0;zClamp();zApply();e.preventDefault()}
+},{passive:false});
+document.addEventListener("touchend",e=>{
+ if(zs<1.05)zReset();
+ if(e.touches.length===1){lx=e.touches[0].clientX;ly=e.touches[0].clientY}
+},{passive:true});
+["gesturestart","gesturechange","gestureend"].forEach(n=>document.addEventListener(n,e=>e.preventDefault())); // Safari iOS: niente zoom di pagina
 $("#tb").addEventListener("click",e=>{if(Date.now()<tbLock){e.stopPropagation();e.preventDefault()}},true);
 $("#tbB").onclick=()=>leave();
 $("#tbZ").onclick=()=>{fillOn=!fillOn;LS.set("tv-fill",fillOn);applyFill();flash(fillOn?"Schermo riempito":"Immagine intera")};
