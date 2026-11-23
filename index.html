@@ -521,8 +521,17 @@ function showPv(c){
 }
 
 /* ---------- riproduzione ---------- */
+function remoteActive(){
+ return !!(video.dataset.remoteConnected==="1"||(video.remote&&video.remote.state==="connected")||video.webkitCurrentPlaybackTargetIsWireless);
+}
 function stop(){
- tok++;if(hls){hls.destroy();hls=null}
+ tok++;
+ if(remoteActive()){
+  if(hls){try{hls.destroy()}catch(e){}hls=null}
+  video.onerror=null;video.onplaying=null;
+  return;
+ }
+ if(hls){hls.destroy();hls=null}
  video.onerror=null;video.onplaying=null;video.pause();video.removeAttribute("src");try{video.load()}catch(e){}
 }
 function setState(t){curState=t;$("#state").textContent=t}
@@ -551,7 +560,10 @@ function start(c,idx,prev){
   if(navigator.onLine!==false)markDead(c,true);
   if(zapDir&&zapN<10)skT=setTimeout(()=>{if(my===tok)step(zapDir,true)},1200);
  };
- if(window.Hls&&Hls.isSupported()){
+ if(remoteActive()){
+  if(hls){try{hls.destroy()}catch(e){}hls=null}
+  video.onerror=fail;video.src=src.url;video.load();go(my);
+ }else if(window.Hls&&Hls.isSupported()){
   hls=new Hls({capLevelToPlayerSize:true,maxBufferLength:12});
   hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal)fail()});
   hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(my===tok&&video.paused)go(my)});
@@ -931,10 +943,12 @@ document.addEventListener("touchend",e=>{
 /* trasmissione sulla TV (AirPlay / Cast): serve il flusso HLS diretto, quindi si passa al lettore nativo del telefono */
 (()=>{const b=$("#cast"),ap=typeof video.webkitShowPlaybackTargetPicker==="function",rp=!!(video.remote&&video.remote.prompt);
  if(!ap&&!rp)return;b.classList.add("ok");
+ if(video.remote){
+  video.remote.addEventListener("connect",()=>{video.dataset.remoteConnected="1"});
+  video.remote.addEventListener("disconnect",()=>{delete video.dataset.remoteConnected});
+ }
  b.onclick=e=>{e.stopPropagation();
-  const nat=video.canPlayType("application/vnd.apple.mpegurl");
-  if(hls&&nat){const u=hls.url;try{hls.destroy()}catch(_){}hls=null;video.src=u;video.play().catch(()=>{})}
-  else if(hls){flash("Trasmissione non supportata da questo browser");return}
+  if(hls){const u=hls.url;try{hls.destroy()}catch(_){}hls=null;video.src=u;video.load();video.play().catch(()=>{})}
   if(ap)video.webkitShowPlaybackTargetPicker();else video.remote.prompt().catch(()=>{});
   showOvl()};
 })();
