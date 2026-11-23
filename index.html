@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#070a13">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -297,10 +298,11 @@ function parseM3U(text,pri,secure){
   if(!lines[i].startsWith("#EXTINF"))continue;
   const name=(lines[i].split(",").pop()||"").trim();let j=i+1;
   while(j<lines.length&&lines[j].startsWith("#"))j++;
-  const url=(lines[j]||"").trim();
-  if(!/^https?:/i.test(url)||SKIP.test(url)||(secure&&/^http:/i.test(url)))continue;
+  let url=(lines[j]||"").trim();
+  if(!/^https?:/i.test(url)||SKIP.test(url))continue;
+  let up=false;if(secure&&/^http:/i.test(url)){url=url.replace(/^http:/i,"https:");up=true} // pagina https: provo la versione https del link
   const lm=lines[i].match(/tvg-logo="(https?:[^"]+)"/),gt=lines[i].match(/group-title="([^"]*)"/),tm=lines[i].match(/tvg-id="([^"]*)"/);
-  out.push({name,url,q:quality(name),tid:tm?tm[1]:"",pri,ci:catOf((gt?gt[1]:"")+" "+name),geo:/geo-?block/i.test(lines[i]),logo:lm&&!(secure&&/^http:/i.test(lm[1]))?lm[1]:""});
+  out.push({name,url,up,q:quality(name),tid:tm?tm[1]:"",pri,ci:catOf((gt?gt[1]:"")+" "+name),geo:/geo-?block/i.test(lines[i]),logo:lm&&!(secure&&/^http:/i.test(lm[1]))?lm[1]:""});
  }
  return out;
 }
@@ -310,11 +312,11 @@ function group(raw,order){
   const k=keyOf(r.name);if(!k)return;
   if(!map.has(k))map.set(k,{key:k,name:base(r.name),logo:"",tid:"",ci:7,sources:[]});
   const g=map.get(k);if(!g.logo&&r.logo)g.logo=r.logo;if(!g.tid&&r.tid)g.tid=r.tid;if(g.ci===7&&r.ci!==7)g.ci=r.ci;
-  if(!g.sources.some(s=>s.url===r.url))g.sources.push({url:r.url,q:r.q,pri:r.pri,geo:!!r.geo});
+  if(!g.sources.some(s=>s.url===r.url))g.sources.push({url:r.url,q:r.q,pri:r.pri,geo:!!r.geo,up:!!r.up});
  });
  const rank=k=>{let i=order.indexOf(k);if(i<0)i=order.findIndex(o=>o.length>3&&k.indexOf(o)===0);return i};
  const out=[...map.values()];
- out.forEach(g=>{g.sources.sort((a,b)=>(a.geo?1:0)-(b.geo?1:0)||b.q-a.q||b.pri-a.pri);g.geo=g.sources.every(x=>x.geo)});
+ out.forEach(g=>{g.sources.sort((a,b)=>(a.geo?1:0)-(b.geo?1:0)||a.pri-b.pri||(a.up?1:0)-(b.up?1:0)||b.q-a.q);g.geo=g.sources.every(x=>x.geo)});
  out.sort((a,b)=>{if(a.geo!==b.geo)return a.geo?1:-1;const ia=rank(a.key),ib=rank(b.key);if(ia!==-1||ib!==-1)return(ia===-1?999:ia)-(ib===-1?999:ib);return a.name.localeCompare(b.name,"it")});
  return out;
 }
@@ -564,7 +566,7 @@ function start(c,idx,prev){
   if(zapDir&&zapN<10)skT=setTimeout(()=>{if(my===tok)step(zapDir,true)},1200);
  };
  // se non parte entro qualche secondo passa alla sorgente successiva (senza aspettare i timeout di hls.js)
- const arm=()=>{wd=setTimeout(()=>{if(my===tok&&video.readyState<3)fail()},idx+1<c.sources.length?9000:25000)};
+ const arm=()=>{wd=setTimeout(()=>{if(my===tok&&video.readyState<3)fail()},idx+1<c.sources.length?7000:25000)};
  if(remoteActive()){
   if(hls){try{hls.destroy()}catch(e){}hls=null}
   video.onerror=fail;video.src=src.url;video.load();go(my);
