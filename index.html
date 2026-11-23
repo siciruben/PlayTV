@@ -218,18 +218,19 @@ html,body{background:#05070d}
 #nm{padding-top:calc(4vh + env(safe-area-inset-top))}
 }
 #player.full,#app.w{touch-action:none}
-.mob #tb{background:none;pointer-events:none;justify-content:center;padding:0 .8rem calc(.7rem + env(safe-area-inset-bottom))}
-.mob #tb.hide{pointer-events:none}
-.mob #tb #tbp{pointer-events:auto;display:flex;justify-content:space-around;align-items:center;width:100%;max-width:26rem;padding:.35rem .4rem;border-radius:1.5rem;background:rgba(14,20,38,.9);border:.08rem solid rgba(255,255,255,.1);box-shadow:0 .4rem 1.4rem rgba(0,0,0,.55)}
-.mob #tb.hide #tbp{pointer-events:none}
-.mob #tb button{background:transparent}
+/* barra comandi: sfumatura trasparente originale in basso + pillola monocolore con bordi massimi, sempre in basso (anche in orizzontale) */
+.mob #tb{top:auto;bottom:0;left:0;right:0;width:auto;flex-direction:row;justify-content:center;align-items:flex-end;padding:1.2rem .6rem calc(.7rem + env(safe-area-inset-bottom));background:linear-gradient(rgba(0,0,0,0),rgba(0,0,0,.85))}
+.mob #tb #tbp{pointer-events:auto;display:flex;flex-direction:row;justify-content:space-evenly;align-items:center;width:100%;max-width:27rem;padding:.5rem .7rem;border-radius:999px;background:#18213a;border:0;box-shadow:none}
+.mob #tb button{min-width:0;width:3.2rem;height:3.2rem;margin:0;padding:0;border-radius:50%;background:transparent;font-size:1.5rem;display:flex;align-items:center;justify-content:center}
+.mob #tb button svg{width:1.7rem;height:1.7rem}
 .mob #tb button.on,.mob #tb button:active{background:#3d79f2}
 @media (orientation:landscape){
-.mob #tb{padding:0 calc(.8rem + env(safe-area-inset-right)) 0 1.6rem;background:none;justify-content:center;align-items:center}
-.mob #tb #tbp{flex-direction:column;width:auto;max-width:none;padding:.4rem;border-radius:1.6rem}
-.mob #tb button{width:2.9rem;height:2.9rem;margin:.1rem 0}
+.mob #tb #tbp{width:auto;max-width:none;gap:1rem;padding:.5rem 1rem}
+.mob #clk{right:4vw}
+.mob #numk{right:4vw}
+.mob #subs{left:2vw;right:2vw;bottom:calc(6rem + env(safe-area-inset-bottom))}
 }
-@media (orientation:landscape) and (max-height:380px){.mob #tb button{width:2.5rem;height:2.5rem;margin:.06rem 0}}
+@media (orientation:landscape) and (max-height:380px){.mob #tb{padding-top:.6rem}.mob #tb #tbp{gap:.8rem;padding:.35rem .8rem}.mob #tb button{width:2.8rem;height:2.8rem}.mob #subs{bottom:calc(4.8rem + env(safe-area-inset-bottom))}}
 </style>
 </head>
 <body>
