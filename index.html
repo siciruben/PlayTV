@@ -33,7 +33,6 @@ body{margin:0;height:100vh;overflow:hidden;background:#070a13;color:#eaf0ff;font
 #slot{position:relative;height:0;padding:0 0 56.25%;border-radius:1rem;background:#0b1124;color:#8b96b0;font-size:1.1rem;text-align:center}
 #slotmsg{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);padding:0 1rem}
 #player{position:fixed;z-index:1;background:#000;object-fit:contain}
-#player.remote-ui{pointer-events:none}
 #player.pv{border-radius:1rem;-webkit-clip-path:inset(0 round 1rem);clip-path:inset(0 round 1rem);overflow:hidden}
 #player.off{visibility:hidden}
 #player.full{top:0;left:0;width:100%;height:100%}
@@ -944,16 +943,10 @@ document.addEventListener("touchend",e=>{
 /* trasmissione sulla TV (AirPlay / Cast): serve il flusso HLS diretto, quindi si passa al lettore nativo del telefono */
 (()=>{const b=$("#cast"),ap=typeof video.webkitShowPlaybackTargetPicker==="function",rp=!!(video.remote&&video.remote.prompt);
  if(!ap&&!rp)return;b.classList.add("ok");
- const syncRemoteUI=()=>{
-  const active=remoteActive();
-  video.classList.toggle("remote-ui",active);
- };
  if(video.remote){
-  video.remote.addEventListener("connect",()=>{video.dataset.remoteConnected="1";syncRemoteUI()});
-  video.remote.addEventListener("disconnect",()=>{delete video.dataset.remoteConnected;syncRemoteUI()});
+  video.remote.addEventListener("connect",()=>{video.dataset.remoteConnected="1"});
+  video.remote.addEventListener("disconnect",()=>{delete video.dataset.remoteConnected});
  }
- video.addEventListener("webkitcurrentplaybacktargetiswirelesschanged",syncRemoteUI);
- syncRemoteUI();
  b.onclick=e=>{e.stopPropagation();
   if(hls){const u=hls.url;try{hls.destroy()}catch(_){}hls=null;video.src=u;video.load();video.play().catch(()=>{})}
   if(ap)video.webkitShowPlaybackTargetPicker();else video.remote.prompt().catch(()=>{});
