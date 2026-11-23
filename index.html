@@ -573,10 +573,19 @@ function start(c,idx,prev){
  }else if(window.Hls&&Hls.isSupported()){
   hls=new Hls({capLevelToPlayerSize:true,maxBufferLength:12});
   let rec=0;
-  hls.on(Hls.Events.ERROR,(_,d)=>{if(!d.fatal||my!==tok)return;
+  hls.on(Hls.Events.ERROR,(_,d)=>{
+   if(!d.fatal){ // il video si ferma per buffer vuoto: elimino il livello in uso e quelli sopra, resta il precedente
+    if(my===tok&&d.details===Hls.ErrorDetails.BUFFER_STALLED_ERROR){const cl=hls.currentLevel;if(cl>0)for(let k=hls.levels.length-1;k>=cl;k--)hls.removeLevel(k)}
+    return}
+   if(my!==tok)return;
    if(started&&rec++<3){if(d.type===Hls.ErrorTypes.NETWORK_ERROR){hls.startLoad();return}if(d.type===Hls.ErrorTypes.MEDIA_ERROR){hls.recoverMediaError();return}}
    fail()});
-  hls.on(Hls.Events.MANIFEST_PARSED,()=>{if(my===tok&&video.paused)go(my)});
+  hls.on(Hls.Events.MANIFEST_PARSED,()=>{
+   if(my!==tok)return;
+   // qualità massima: allargando l'anteprima lo stream non deve saltare ai livelli più pesanti (1080p)
+   const MAXH=window.tizen?1080:720,L=hls.levels;
+   if(L&&L.length>1&&L.some(l=>!l.height||l.height<=MAXH))for(let k=L.length-1;k>=0;k--)if(L[k].height>MAXH)hls.removeLevel(k);
+   if(video.paused)go(my)});
   hls.loadSource(src.url);hls.attachMedia(video);go(my);arm();
  }else{video.src=src.url;video.onerror=fail;go(my);arm()}
 }
