@@ -280,6 +280,15 @@ const COUNTRIES={
  us:{label:"Stati Uniti",code:"US",iptv:["us"],free:["usa","us","united_states"],order:["abc","cbs","nbc","fox","thecw","cw","pbs","ion","abcnews","cbsnews","nbcnews","foxnews","foxweather","cnn","msnbc","cnbc","bloomberg","newsy","cspan","telemundo","univision","comet","antennatv","mynetworktv","cozytv"]},
  de:{label:"Germania",code:"DE",iptv:["de"],free:["germany","de"],order:["daserste","zdf","rtl","sat1","prosieben","vox","kabeleins","rtlzwei","rtl2","zdfneo","zdfinfo","tagesschau24","arte","3sat","phoenix","one","ardalpha","kika","dmax","tele5","nitro","sixx","welt","ntv","wdr","ndr","br","mdr","swr","hr","rbb","sr"]}
 };
+// Correzioni manuali: sorgenti aggiunte a mano, per paese. Passano davanti a quelle delle liste (pri:-1);
+// se il canale esiste gia' si aggiungono come sorgente, altrimenti lo creano. "pri:2" = solo come ultima risorsa.
+// Il nome deve dare la stessa chiave del canale ("Rai Yoyo" -> raiyoyo). Campi: name, url, cat (opz.), logo (opz.), tid (opz., per la guida TV), pri (opz.)
+const EXTRA={
+ it:[
+  {name:"Rai Yoyo",url:"https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899",cat:"kids",tid:"RaiYoyo.it",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Rai_Yoyo_-_Logo_2017.svg/640px-Rai_Yoyo_-_Logo_2017.svg.png"},
+  {name:"Rai Yoyo",url:"https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=16",cat:"kids"}
+ ]
+};
 const TABS=["fav",...Object.keys(COUNTRIES),"glob"];
 const SUBLANG={it:"it",uk:"en",us:"en",de:"de"};
 const CATS=["Tutti","Generali","News","Bambini","Sport","Film","Musica","Altri"];
@@ -353,6 +362,7 @@ async function loadCountry(id){
  const C=COUNTRIES[id],raw=[];
  const get=async(urls,pri)=>{for(const u of urls){try{const r=await fetch(u);if(!r.ok)continue;raw.push(...parseM3U(await r.text(),pri,secure));return}catch(e){}}};
  await Promise.all([get(C.iptv.map(IPTV),0),get(C.free.map(FREE),1)]);
+ (EXTRA[id]||[]).forEach(e=>raw.push({name:e.name,url:e.url,up:false,q:0,tid:e.tid||"",pri:e.pri==null?-1:e.pri,ci:catOf((e.cat||"")+" "+e.name),geo:false,logo:e.logo||""}));
  const g=group(raw,C.order);g.forEach(x=>{x.cc=id});return cache[id]=g;
 }
 const loadFavCountries=()=>Promise.all([...new Set(favs.map(f=>f.split(":")[0]))].filter(x=>COUNTRIES[x]).map(loadCountry));
