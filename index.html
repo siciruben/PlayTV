@@ -275,7 +275,7 @@ const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=nu
 const IPTV=c=>"https://iptv-org.github.io/iptv/countries/"+c+".m3u";
 const FREE=n=>"https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_"+n+".m3u8";
 const COUNTRIES={
- it:{label:"Italia",code:"IT",iptv:["it"],free:["italy"],order:["rai1","rai2","rai3","rete4","canale5","italia1","la7","tv8","nove","20mediaset","rai4","iris","rai5","raimovie","raipremium","paramountnetwork","la7d","la5","realtime","cine34","focus","topcrime","boing","k2","raigulp","raiyoyo","raistoria","raiscuola","rainews24","raisport","mediasetextra","tgcom24","skytg24","cartoonito","27twentyseven","tv2000"]},
+ it:{label:"Italia",code:"IT",iptv:["it"],free:["italy"],more:["https://raw.githubusercontent.com/Tundrak/IPTV-Italia/main/iptvita.m3u","https://iptv-org.github.io/iptv/languages/ita.m3u"],order:["rai1","rai2","rai3","rete4","canale5","italia1","la7","tv8","nove","20mediaset","rai4","iris","rai5","raimovie","raipremium","paramountnetwork","la7d","la5","realtime","cine34","focus","topcrime","boing","k2","raigulp","raiyoyo","raistoria","raiscuola","rainews24","raisport","mediasetextra","tgcom24","skytg24","cartoonito","27twentyseven","tv2000"]},
  uk:{label:"Regno Unito",code:"UK",iptv:["uk","gb"],free:["uk","united_kingdom"],order:["bbcone","bbctwo","itv1","channel4","channel5","itv2","bbcthree","bbcfour","itv3","itv4","e4","film4","more4","5star","quest","dave","yesterday","drama","really","bbcnews","skynews","gbnews","cbbc","cbeebies","citv","bbcparliament","s4c","talktv"]},
  us:{label:"Stati Uniti",code:"US",iptv:["us"],free:["usa","us","united_states"],order:["abc","cbs","nbc","fox","thecw","cw","pbs","ion","abcnews","cbsnews","nbcnews","foxnews","foxweather","cnn","msnbc","cnbc","bloomberg","newsy","cspan","telemundo","univision","comet","antennatv","mynetworktv","cozytv"]},
  de:{label:"Germania",code:"DE",iptv:["de"],free:["germany","de"],order:["daserste","zdf","rtl","sat1","prosieben","vox","kabeleins","rtlzwei","rtl2","zdfneo","zdfinfo","tagesschau24","arte","3sat","phoenix","one","ardalpha","kika","dmax","tele5","nitro","sixx","welt","ntv","wdr","ndr","br","mdr","swr","hr","rbb","sr"]}
@@ -286,7 +286,8 @@ const COUNTRIES={
 const EXTRA={
  it:[
   {name:"Rai Yoyo",url:"https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899",cat:"kids",tid:"RaiYoyo.it",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Rai_Yoyo_-_Logo_2017.svg/640px-Rai_Yoyo_-_Logo_2017.svg.png"},
-  {name:"Rai Yoyo",url:"https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=16",cat:"kids"}
+  {name:"Rai Yoyo",url:"https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=16",cat:"kids"},
+  {name:"Rai Yoyo",url:"https://mediapolis.rai.it/relinker/relinkerServlet.htm?cont=746899&output=7&forceUserAgent=raiplayappletv",cat:"kids"}
  ]
 };
 const TABS=["fav",...Object.keys(COUNTRIES),"glob"];
@@ -361,8 +362,13 @@ async function loadCountry(id){
  if(cache[id])return cache[id];
  const C=COUNTRIES[id],raw=[];
  const get=async(urls,pri)=>{for(const u of urls){try{const r=await fetch(u);if(!r.ok)continue;raw.push(...parseM3U(await r.text(),pri,secure));return}catch(e){}}};
- await Promise.all([get(C.iptv.map(IPTV),0),get(C.free.map(FREE),1)]);
+ const more=[];
+ const getMore=async urls=>{await Promise.all((urls||[]).map(async u=>{try{const r=await fetch(u);if(!r.ok)return;more.push(...parseM3U(await r.text(),2,secure))}catch(e){}}))};
+ await Promise.all([get(C.iptv.map(IPTV),0),get(C.free.map(FREE),1),getMore(C.more)]);
+ // liste di riserva: servono solo come sorgenti in piu' per canali gia' noti o presenti nell'elenco "order" (niente canali locali a pioggia)
+ const known=new Set(raw.map(r=>keyOf(r.name))),inOrder=k=>C.order.indexOf(k)>=0||C.order.some(o=>o.length>3&&k.indexOf(o)===0);
  (EXTRA[id]||[]).forEach(e=>raw.push({name:e.name,url:e.url,up:false,q:0,tid:e.tid||"",pri:e.pri==null?-1:e.pri,ci:catOf((e.cat||"")+" "+e.name),geo:false,logo:e.logo||""}));
+ more.forEach(r=>{const k=keyOf(r.name);if(k&&(known.has(k)||inOrder(k))){r.tid="";raw.push(r)}});
  const g=group(raw,C.order);g.forEach(x=>{x.cc=id});return cache[id]=g;
 }
 const loadFavCountries=()=>Promise.all([...new Set(favs.map(f=>f.split(":")[0]))].filter(x=>COUNTRIES[x]).map(loadCountry));
